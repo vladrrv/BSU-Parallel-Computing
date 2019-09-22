@@ -8,12 +8,12 @@ using namespace std;
 
 typedef unsigned long long ull;
 
-void save_matrix(double *matrix, ull m, ull n) {
-	char name[256];
-	cout << "\nEnter file name: ";
-	cin >> name;
-	cout << "Saving... ";
-	ofstream output_file(name);
+void save_matrix(double *matrix, ull m, ull n, const char * title) {
+	cout << "\nSaving " << title << "... ";
+	char path[256];
+	strcpy_s(path, title);
+	strcat_s(path, ".txt");
+	ofstream output_file(path);
 	output_file << m << " " << n;
 	for (ull i = 0; i < m; ++i) {
 		output_file << endl;
@@ -24,20 +24,14 @@ void save_matrix(double *matrix, ull m, ull n) {
 	cout << "Done!";
 	output_file.close();
 }
-void load_matrix(double *&matrix, ull &m, ull &n) {
+void load_matrix(double *&matrix, ull &m, ull &n, const char* title) {
+	cout << "Loading " << title << "... ";
 	char path[256];
-	ifstream input_file;
-	while (true) {
-		cout << "\nSpecify input file path: ";
-		cin >> path;
-		input_file = ifstream(path);
-		if (input_file.is_open()) break;
-		else cout << "\nError opening file!";
-	}
-
+	strcpy_s(path, title);
+	strcat_s(path, ".txt");
+	ifstream input_file(path);
 	input_file >> m >> n;
 	matrix = new double[m * n];
-	cout << "Loading... ";
 	for (ull i = 0; i < m; ++i) {
 		for (ull j = 0; j < n; ++j) {
 			input_file >> matrix[i * n + j];
@@ -45,8 +39,8 @@ void load_matrix(double *&matrix, ull &m, ull &n) {
 	}
 	cout << "Done!";
 }
-void generate_matrix(double *&matrix, ull m, ull n) {
-	cout << "\nGenerating... ";
+void generate_matrix(double *&matrix, ull m, ull n, const char* title) {
+	cout << "\nGenerating " << title << "... ";
 	matrix = new double[m * n];
 	for (ull i = 0; i < m; ++i) {
 		for (ull j = 0; j < n; ++j) {
@@ -55,7 +49,7 @@ void generate_matrix(double *&matrix, ull m, ull n) {
 	}
 	cout << "Done!";
 }
-void print_matrix(const char* title, double* matrix, ull m, ull n) {
+void print_matrix(double* matrix, ull m, ull n, const char* title) {
 	cout << "\n " << title << ":";
 	cout << "\n------------------------------------------------";
 	for (ull i = 0; i < m; ++i) {
@@ -104,6 +98,7 @@ void block_product(double* A, double* B, double* C, ull n1, ull n2, ull n3, ull 
 
 int main(int argc, char* argv[]) {
 	ull n1, n2, n3, r, threads;
+	bool dump_results = false;
 	double* A;
 	double* B;
 	double* C;
@@ -113,11 +108,11 @@ int main(int argc, char* argv[]) {
 		n3 = atoi(argv[3]);
 		r = atoi(argv[4]);
 		threads = atoi(argv[5]);
-		cout << "n1 = " << n1 << "; n2 = " << n2 << "; n3 = " << n3 << "\nr = " << r << "; threads = " << threads;
-		cout << "\nGenerate A";
-		generate_matrix(A, n1, n2);
-		cout << "\nGenerate B";
-		generate_matrix(B, n2, n3);
+		dump_results = atoi(argv[6]);
+		cout << "\n________________________________";
+		cout << "\nn1 = " << n1 << "; n2 = " << n2 << "; n3 = " << n3 << "\nr = " << r << "; threads = " << threads;
+		generate_matrix(A, n1, n2, "A");
+		generate_matrix(B, n2, n3, "B");
 	}
 	else {
 		r = 2;
@@ -126,26 +121,23 @@ int main(int argc, char* argv[]) {
 		if (_getch() == ' ') {
 			cout << "\nSpecify n1, n2, n3: ";
 			cin >> n1 >> n2 >> n3;
-			cout << "\nGenerate A";
-			generate_matrix(A, n1, n2);
-			cout << "\nGenerate B";
-			generate_matrix(B, n2, n3);
+			generate_matrix(A, n1, n2, "A");
+			generate_matrix(B, n2, n3, "B");
 		}
 		else {
-			cout << "\nLoad A";
-			load_matrix(A, n1, n2);
-			cout << "\nLoad B";
-			load_matrix(B, n2, n3);
+			load_matrix(A, n1, n2, "A");
+			load_matrix(B, n2, n3, "B");
 		}
-		cout << "\nPrint A and B? y/[n] ";
-		if (_getch() == 'y') {
-			print_matrix("A", A, n1, n2);
-			print_matrix("B", B, n2, n3);
-		}
+		cout << "\nSpecify r: ";
+		cin >> r;
+		cout << "\nSpecify number of threads: ";
+		cin >> threads;
 	}
 	C = new double[n1 * n3];
 	fill_n(C, n1 * n3, 0);
 	
+
+	cout << "\nComputing... ";
 	auto start = chrono::high_resolution_clock::now();
 
 	block_product(A, B, C, n1, n2, n3, r, threads);
@@ -153,23 +145,21 @@ int main(int argc, char* argv[]) {
 	auto finish = chrono::high_resolution_clock::now();
 	chrono::duration<double> elapsed = finish - start;
 	int total = elapsed.count() * 1000;
-	cout << "\nElapsed time: " << total << " ms\n";
+	cout << "Done!";
+	cout << "\nElapsed time: " << total << " ms";
 
+	if (dump_results) {
+		save_matrix(A, n1, n2, "A");
+		save_matrix(B, n2, n3, "B");
+		save_matrix(C, n1, n3, "C");
+	}
 
-	if (argc != 6) {
-		cout << "\nPrint result? y/[n] ";
-		if (_getch() == 'y') {
-			print_matrix("C", C, n1, n3);
-		}
-
+	if (argc < 6) {
 		cout << "\nSave A, B, C? y/[n] ";
 		if (_getch() == 'y') {
-			cout << "\nSave A";
-			save_matrix(A, n1, n2);
-			cout << "\nSave B";
-			save_matrix(B, n2, n3);
-			cout << "\nSave C";
-			save_matrix(C, n1, n3);
+			save_matrix(A, n1, n2, "A");
+			save_matrix(B, n2, n3, "B");
+			save_matrix(C, n1, n3, "C");
 		}
 	}
 	return total;
