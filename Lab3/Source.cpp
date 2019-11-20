@@ -1,5 +1,6 @@
 #include <mpi.h>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <ctime>
 #include <chrono>
@@ -50,11 +51,13 @@ void generate_matrix(double*& matrix, int n) {
 	cout << "\nGenerating... ";
 	matrix = new double[n * (n + 1)];
 	for (int i = 0; i < n; ++i) {
+		double sum = 0;
 		for (int j = 0; j < n; ++j) {
-			double a = (i==j)? 100 : rand()%100;
+			double a = (i==j)? 100 : (double)(2*i+j)/100000;
 			matrix[i*(n+1)+j] = a;
+			sum += a;
 		}
-		matrix[i*(n+1)+n] = 1;
+		matrix[i*(n+1)+n] = sum;
 	}
 	cout << "Done!";
 }
@@ -109,7 +112,7 @@ void save_matrix(double* matrix, int n, int m, char* name=NULL) {
 	for (int i = 0; i < n; ++i) {
 		output_file << endl;
 		for (int j = 0; j < m; ++j) {
-			output_file << matrix[i*m+j] << " ";
+			output_file << setprecision(12) << fixed << matrix[i*m+j] << " ";
 		}
 	}
 	output_file.close();
