@@ -14,7 +14,7 @@ import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 public class Histogram {
-    private static final int NUM_BINS = 5;
+    private static final int NUM_BINS = 10;
 
     public static class IntArrayWritable extends ArrayWritable {
 
